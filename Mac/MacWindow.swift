@@ -541,7 +541,7 @@ struct MacWindow: View {
     private func accept(_ item: CardPresentation) {
         let currentRoom = currentRoomID
         let elsewhere = currentRoom != nil && (item.card.umisteni?.id ?? "") != currentRoom
-        let already = item.stav == "NALEZENO"
+        let already = item.stav == "NALEZENO" || item.stav == "PREMISTENI"
         if !already {
             store.markFound(item.id)
         }
@@ -550,7 +550,7 @@ struct MacWindow: View {
         detailID = current.id
         listSelection = current.id
         let kind: ScanNotice.Kind = elsewhere ? .elsewhere : (already ? .already : .found)
-        let title = elsewhere ? "Evidováno jinde" : (already ? "Už bylo nalezeno" : "Nalezeno")
+        let title = elsewhere ? "Evidováno jinde" : (item.stav == "PREMISTENI" ? "Přemístěno" : (already ? "Už bylo nalezeno" : "Nalezeno"))
         let place = current.card.umisteni?.label ?? "Bez umístění"
         notice = ScanNotice(
             kind: kind,

@@ -189,13 +189,13 @@ struct ScanView: View {
 
     private func accept(_ item: CardPresentation) {
         let elsewhere = locationID != nil && (item.card.umisteni?.id ?? "") != locationID
-        let already = item.stav == "NALEZENO"
+        let already = item.stav == "NALEZENO" || item.stav == "PREMISTENI"
         if !already {
             store.markFound(item.id)
         }
         let current = store.presentation(for: item.card)
         result = ScanHit(
-            title: already ? "Už bylo nalezeno" : "Nalezeno",
+            title: item.stav == "PREMISTENI" ? "Přemístěno" : (already ? "Už bylo nalezeno" : "Nalezeno"),
             tone: elsewhere ? .orange : .green,
             cislo: current.card.cislo,
             nazev: current.card.nazevMajetku,
