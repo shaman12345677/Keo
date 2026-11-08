@@ -23,14 +23,16 @@ swift test
 
 ### Windows
 
-Složka `Windows` je Avalonia aplikace (.NET 8). Hotový balík je v GitHub Releases jako `Keo4Inventura-win-x64.zip`. Po rozbalení vznikne složka `Keo4 inventura` — v ní spusťte `Keo4Inventura.exe`.
+Složka `Windows` je Avalonia aplikace (.NET 8). V GitHub Releases je portable balík `Keo4Inventura-win-x64-portable.zip`: po rozbalení je složka `Keo4 inventura` s jedním `Keo4Inventura.exe` (bez instalace).
 
 Po startu aplikace zkontroluje GitHub Releases. Když je novější verze, nabídne otevření stránky ke stažení (stejně jako Scanner na Windows).
 
 ```sh
 export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="$HOME/.dotnet"
 dotnet test Windows/Keo.Core.Tests/Keo.Core.Tests.csproj
-dotnet publish Windows/Keo.App/Keo.App.csproj -c Release -r win-x64 --self-contained true -o Windows/dist
+dotnet publish Windows/Keo.App/Keo.App.csproj -c Release -r win-x64 --self-contained true \
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:EnableCompressionInSingleFile=true -o Windows/portable
 ```
 
 

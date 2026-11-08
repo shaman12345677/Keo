@@ -9,4 +9,5 @@ Package.resolved
 bin/
 obj/
 Windows/dist/
+Windows/portable/
 Windows/*.zip
