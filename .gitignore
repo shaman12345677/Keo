@@ -11,3 +11,4 @@ obj/
 Windows/dist/
 Windows/portable/
 Windows/*.zip
+Windows/*.exe
