@@ -18,7 +18,6 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Name="ImportButton" Content="Otevřít" MinWidth="90"/>
           <Button Name="ExportButton" Content="Export" MinWidth="90"/>
-          <Button Name="UpdateButton" Content="Aktualizace" MinWidth="100"/>
           <ToggleButton Name="ScanToggle" Content="Skenování vypnuto" MinWidth="170"/>
         </StackPanel>
       </Grid>

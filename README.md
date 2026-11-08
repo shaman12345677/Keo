@@ -25,7 +25,7 @@ swift test
 
 Složka `Windows` je Avalonia aplikace (.NET 8). Hotový balík je v GitHub Releases jako `Keo4Inventura-win-x64.zip`. Rozbalte celou složku a spusťte `Keo4Inventura.exe`.
 
-Kontrola aktualizací funguje stejně jako u Scanneru na Windows: aplikace zjistí novější release a otevře stránku ke stažení. Repo musí být pro kontrolu verze veřejné (nebo musíte být přihlášeni ke stažení ze soukromého Releases).
+Po startu aplikace zkontroluje GitHub Releases. Když je novější verze, nabídne otevření stránky ke stažení (stejně jako Scanner na Windows).
 
 ```sh
 export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="$HOME/.dotnet"

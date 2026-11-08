@@ -42,7 +42,6 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
         ImportButton.Click += async (_, _) => await Import();
         ExportButton.Click += async (_, _) => await Export();
-        UpdateButton.Click += async (_, _) => await UpdateChecker.CheckAsync(this, manual: true);
         ScanToggle.IsCheckedChanged += (_, _) =>
         {
             scanning = ScanToggle.IsChecked == true;
