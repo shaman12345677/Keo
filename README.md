@@ -1,20 +1,53 @@
 # Keo4 inventura
 
-Nezávislá aplikace pro iPhone a iPad. Načte soubor `Inventura.zip` z programu KEO4, umožní inventuru majetku skenováním kódů a exportuje soubor, který KEO4 načte zpět. Není to oficiální program společnosti ALIS.
+Nezávislá aplikace pro inventuru majetku ze souboru `Inventura.zip` z desktopového programu **KEO4**.
+
+**Toto není oficiální software společnosti ALIS.** Není to oficiální verze KEO4 ani oficiální mobilní / desktopová čtečka od ALIS. Vznikla samostatně pro vlastní použití se stejným výměnným souborem inventury.
+
+## Platformy
+
+| Platforma | Jak získat |
+| --- | --- |
+| iPhone / iPad | App Store — *Keo4 inventura* |
+| Mac | App Store — stejná aplikace, čtečka jako HID klávesnice |
+| Windows | [GitHub Releases](https://github.com/shaman12345677/Keo/releases) — portable `Keo4 inventura.exe` (bez instalace) |
 
 ## Co umí
 
 - import `Inventura.zip` vytvořeného v KEO4 pro čtečku
-- sken QR a čárových kódů kamerou nebo připojenou čtečkou
+- sken QR a čárových kódů (kamera na iOS, HID čtečka na Macu a Windows)
 - označení karty jako nalezené, nenalezené, nebo s návrhem přemístění
 - otevření místnosti podle štítku místnosti
-- export, který v původním souboru mění jen stav inventarizace
+- export, který v původním XML mění jen stav inventarizace, oskenování a návrh přemístění
 
-## Sestavení
+## Windows
 
-Xcode 15 nebo novější, cíl iOS 17. Otevřete `Keo.xcodeproj` a spusťte schéma Keo. Stejný projekt má i schéma KeoMac.
+1. Stáhněte nejnovější release z [Releases](https://github.com/shaman12345677/Keo/releases).
+2. Spusťte `Keo4 inventura.exe` (GitHub může mezeru v názvu souboru nahradit tečkou — po stažení můžete přejmenovat).
+3. Otevřete `Inventura.zip`, zapněte skenování a pracujte s čtečkou.
 
-Jádro je balíček `KeoCore`. Testy:
+Čtečka zůstává v americkém rozložení klávesnice. Windows může zůstat česky — aplikace bere polohu klávesy, ne znak po českém rozložení.
+
+Po startu aplikace zkontroluje GitHub Releases. Když je novější verze, nabídne otevření stránky ke stažení.
+
+SmartScreen může u nepodepsaného souboru zobrazit varování. Jde o očekávané chování u nepodepsaných portable aplikací.
+
+## Výměna s KEO4
+
+1. V KEO4 zvolte **Akce → Vytvořit soubor pro čtečku**. Vznikne `Inventura.zip`.
+2. V aplikaci soubor otevřete (Import / Otevřít).
+3. Po inventuře proveďte Export.
+4. V KEO4 soubor načtěte přes **Akce → Nahrát soubor ze čtečky**.
+
+Čtečka musí být v režimu Bluetooth HID (chová se jako klávesnice). Režimy SPP a BLE aplikace nepoužívá. Telefon / Mac / Windows nechte v češtině.
+
+## Sestavení ze zdroje
+
+### iOS / Mac
+
+Xcode 15 nebo novější, cíl iOS 17 / macOS 14. Otevřete `Keo.xcodeproj`. Schéma **Keo** je iPhone/iPad, schéma **KeoMac** je Mac.
+
+Jádro je balíček `KeoCore`:
 
 ```sh
 cd KeoCore
@@ -23,9 +56,7 @@ swift test
 
 ### Windows
 
-Složka `Windows` je Avalonia aplikace (.NET 8). V GitHub Releases je portable soubor `Keo4 inventura.exe` — stáhnout a spustit, bez instalace.
-
-Po startu aplikace zkontroluje GitHub Releases. Když je novější verze, nabídne otevření stránky ke stažení (stejně jako Scanner na Windows).
+Složka `Windows` je Avalonia aplikace (.NET 8):
 
 ```sh
 export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="$HOME/.dotnet"
@@ -34,16 +65,6 @@ dotnet publish Windows/Keo.App/Keo.App.csproj -c Release -r win-x64 --self-conta
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true -o Windows/portable
 ```
-
-
-## Výměna s KEO4
-
-1. V KEO4 zvolte Akce, Vytvořit soubor pro čtečku. Vznikne `Inventura.zip`.
-2. V aplikaci klepněte na Import a soubor vyberte.
-3. Po inventuře klepněte na Export.
-4. V KEO4 soubor načtěte přes Akce, Nahrát soubor ze čtečky.
-
-Čtečka musí být v režimu Bluetooth HID, tedy se chovat jako klávesnice. Telefon nechte v češtině. Režimy SPP a BLE aplikace nepoužívá.
 
 Vzorová inventura a snímky obrazovky jsou ve složce `Vzor`.
 
