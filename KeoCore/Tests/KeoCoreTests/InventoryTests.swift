@@ -147,6 +147,8 @@ final class InventoryTests: XCTestCase {
             card("board", "55"),
         ])
         XCTAssertEqual(index.match("1550-\nPODV4317543170k01.01.2019V:\n2").map(\.id), ["full"])
+        XCTAssertEqual(index.match("k01.01.2019V:2").map(\.id), [])
+        XCTAssertEqual(index.match("1550-POD\nNázev k\n01.01.2019\nV:2").map(\.id), ["full"])
         XCTAssertEqual(index.match("998název01.01.2022V:2").map(\.id), ["item"])
         XCTAssertEqual(index.match("998název\n2022\nV:2").map(\.id), ["item"])
         XCTAssertEqual(index.match("998-PODnázev01.01.2022V:2").map(\.id), ["pod"])

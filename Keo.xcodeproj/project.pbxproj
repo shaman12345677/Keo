@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000012 /* KeoCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000011 /* KeoCore */; };
+		C30000000000000000000028 /* KeoCore in Frameworks */ = {isa = PBXBuildFile; productRef = C30000000000000000000029 /* KeoCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000004 /* Keo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C30000000000000000000023 /* KeoMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KeoMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -20,7 +22,31 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		C30000000000000000000020 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		C30000000000000000000021 /* Mac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C30000000000000000000022 /* Exceptions for "Mac" folder in "KeoMac" target */,
+			);
+			path = Mac;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C30000000000000000000022 /* Exceptions for "Mac" folder in "KeoMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				KeoMac.entitlements,
+			);
+			target = C30000000000000000000024 /* KeoMac */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000008 /* Frameworks */ = {
@@ -31,6 +57,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C30000000000000000000026 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C30000000000000000000028 /* KeoCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +72,8 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000003 /* App */,
+				C30000000000000000000020 /* Shared */,
+				C30000000000000000000021 /* Mac */,
 				A10000000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* Keo.app */,
+				C30000000000000000000023 /* KeoMac.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,6 +104,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000003 /* App */,
+				C30000000000000000000020 /* Shared */,
 			);
 			name = Keo;
 			packageProductDependencies = (
@@ -74,6 +112,30 @@
 			);
 			productName = Keo;
 			productReference = A10000000000000000000004 /* Keo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C30000000000000000000024 /* KeoMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C3000000000000000000002A /* Build configuration list for PBXNativeTarget "KeoMac" */;
+			buildPhases = (
+				C30000000000000000000025 /* Sources */,
+				C30000000000000000000026 /* Frameworks */,
+				C30000000000000000000027 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C30000000000000000000021 /* Mac */,
+				C30000000000000000000020 /* Shared */,
+			);
+			name = KeoMac;
+			packageProductDependencies = (
+				C30000000000000000000029 /* KeoCore */,
+			);
+			productName = KeoMac;
+			productReference = C30000000000000000000023 /* KeoMac.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -87,6 +149,9 @@
 				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					A10000000000000000000002 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					C30000000000000000000024 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -110,6 +175,7 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000002 /* Keo */,
+				C30000000000000000000024 /* KeoMac */,
 			);
 		};
 /* End PBXProject section */
@@ -122,10 +188,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C30000000000000000000027 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30000000000000000000025 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,6 +408,68 @@
 			};
 			name = Release;
 		};
+		C3000000000000000000002B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Mac/KeoMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Keo4 inventura";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = NO;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C3000000000000000000002C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Mac/KeoMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Keo4 inventura";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = NO;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -349,6 +491,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C3000000000000000000002A /* Build configuration list for PBXNativeTarget "KeoMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C3000000000000000000002B /* Debug */,
+				C3000000000000000000002C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -360,6 +511,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		A10000000000000000000011 /* KeoCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000010 /* XCLocalSwiftPackageReference "KeoCore" */;
+			productName = KeoCore;
+		};
+		C30000000000000000000029 /* KeoCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000010 /* XCLocalSwiftPackageReference "KeoCore" */;
 			productName = KeoCore;
