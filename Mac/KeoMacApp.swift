@@ -23,7 +23,7 @@ struct KeoMacApp: App {
     @StateObject private var scanner = MacScanner()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Keo4 inventura") {
             MacWindow()
                 .environmentObject(store)
                 .environmentObject(scanner)

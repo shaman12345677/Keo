@@ -1,3 +1,4 @@
+import AppKit
 import KeoCore
 import SwiftUI
 import UniformTypeIdentifiers
@@ -544,6 +545,7 @@ struct MacWindow: View {
         if !already {
             store.markFound(item.id)
         }
+        NSSound(named: already ? "Pop" : "Glass")?.play()
         let current = store.presentation(for: item.card)
         detailID = current.id
         listSelection = current.id

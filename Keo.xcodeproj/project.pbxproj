@@ -13,7 +13,7 @@
 
 /* Begin PBXFileReference section */
 		A10000000000000000000004 /* Keo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C30000000000000000000023 /* KeoMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KeoMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C30000000000000000000023 /* Keo4 inventura.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Keo4 inventura.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,7 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* Keo.app */,
-				C30000000000000000000023 /* KeoMac.app */,
+				C30000000000000000000023 /* Keo4 inventura.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -134,8 +134,8 @@
 			packageProductDependencies = (
 				C30000000000000000000029 /* KeoCore */,
 			);
-			productName = KeoMac;
-			productReference = C30000000000000000000023 /* KeoMac.app */;
+			productName = "Keo4 inventura";
+			productReference = C30000000000000000000023 /* Keo4 inventura.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -422,14 +422,15 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Mac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Keo4 inventura";
+				INFOPLIST_KEY_CFBundleName = "Keo4 inventura";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo.mac;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo;
+				PRODUCT_NAME = "Keo4 inventura";
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_APPROACHABLE_CONCURRENCY = NO;
@@ -453,14 +454,15 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Mac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Keo4 inventura";
+				INFOPLIST_KEY_CFBundleName = "Keo4 inventura";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo.mac;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = cz.samekt.keo;
+				PRODUCT_NAME = "Keo4 inventura";
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_APPROACHABLE_CONCURRENCY = NO;
