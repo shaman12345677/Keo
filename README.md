@@ -23,7 +23,7 @@ swift test
 
 ### Windows
 
-Složka `Windows` je Avalonia aplikace (.NET 8). V GitHub Releases je portable soubor `Keo4Inventura-win-x64-portable.exe` — stačí stáhnout a spustit, bez instalace i bez zipu.
+Složka `Windows` je Avalonia aplikace (.NET 8). V GitHub Releases je portable zip `Keo4Inventura-win-x64-portable.zip` (kvůli SmartScreenu; uvnitř je jedno `Keo4Inventura.exe` ve složce `Keo4 inventura`).
 
 Po startu aplikace zkontroluje GitHub Releases. Když je novější verze, nabídne otevření stránky ke stažení (stejně jako Scanner na Windows).
 
