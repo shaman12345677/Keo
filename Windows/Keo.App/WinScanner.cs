@@ -26,7 +26,8 @@ public static class WinScanner
         isEditing = editing;
         onScan = scan;
         proc = Hook;
-        hook = SetWindowsHookEx(WhKeyboardLl, proc, GetModuleHandle(null), 0);
+        // Low-level hook musí mít hMod NULL; u single-file exe GetModuleHandle často selže.
+        hook = SetWindowsHookEx(WhKeyboardLl, proc, IntPtr.Zero, 0);
     }
 
     public static void Remove()

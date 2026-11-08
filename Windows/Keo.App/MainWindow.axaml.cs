@@ -46,6 +46,8 @@ public partial class MainWindow : Window
         {
             scanning = ScanToggle.IsChecked == true;
             ScanToggle.Content = scanning ? "Skenování zapnuto" : "Skenování vypnuto";
+            // Čtečka posílá Enter/mezerník — nesmí znovu „kliknout“ na fokusované tlačítko.
+            if (scanning) FocusManager?.ClearFocus();
         };
         AllRooms.Click += (_, _) =>
         {
