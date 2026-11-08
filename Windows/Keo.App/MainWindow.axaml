@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Keo.MainWindow"
+        x:DataType="local:InventorySession"
+        xmlns:local="clr-namespace:Keo"
+        xmlns:core="clr-namespace:Keo;assembly=Keo.Core"
+        Title="Keo4 inventura"
+        Width="1180" Height="760" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Keo4 inventura" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding Filename}" Opacity="0.7"/>
+          <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Opacity="0.7"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Name="ImportButton" Content="Otevřít" MinWidth="90"/>
+          <Button Name="ExportButton" Content="Export" MinWidth="90"/>
+          <Button Name="UpdateButton" Content="Aktualizace" MinWidth="100"/>
+          <ToggleButton Name="ScanToggle" Content="Skenování vypnuto" MinWidth="170"/>
+        </StackPanel>
+      </Grid>
+      <TextBlock Text="{Binding Counts}" FontWeight="SemiBold"/>
+      <Border Background="#1A34C759" CornerRadius="8" Padding="12,8" IsVisible="{Binding NoticeVisible}">
+        <TextBlock Text="{Binding Notice}" TextWrapping="Wrap"/>
+      </Border>
+    </StackPanel>
+
+    <Panel>
+    <Grid ColumnDefinitions="280,16,*,16,340" IsVisible="{Binding HasBundle}">
+      <DockPanel>
+        <TextBox Name="RoomSearch" DockPanel.Dock="Top" Watermark="Hledat místnost" Margin="0,0,0,8"/>
+        <Button Name="AllRooms" DockPanel.Dock="Top" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,8" Content="Vše"/>
+        <StackPanel DockPanel.Dock="Bottom" Spacing="2" Margin="0,8,0,0" HorizontalAlignment="Center">
+          <TextBlock Name="VersionLabel" Text="1.0.0" FontSize="11" Opacity="0.55" HorizontalAlignment="Center"/>
+          <TextBlock Text="© 2026 Samek Tomáš" FontSize="11" Opacity="0.55" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <ListBox Name="Rooms" ItemsSource="{Binding Rooms}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="local:RoomRow">
+              <Grid Height="40">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="{Binding DoneLength}"/>
+                  <ColumnDefinition Width="{Binding RestLength}"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="#8034C759"/>
+                <DockPanel Grid.ColumnSpan="2" Margin="10,0">
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding Count}" VerticalAlignment="Center" Opacity="0.7"/>
+                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </DockPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <DockPanel Grid.Column="2">
+        <TextBox Name="CardSearch" DockPanel.Dock="Top" Watermark="Číslo nebo název" Margin="0,0,0,8"/>
+        <ListBox Name="Cards" ItemsSource="{Binding Cards}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="local:CardRow">
+              <StackPanel Margin="4,6">
+                <TextBlock Text="{Binding Number}" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                <TextBlock>
+                  <Run Text="{Binding StatusTitle}" Foreground="{Binding StatusBrush}"/>
+                  <Run Text=" · " Foreground="#99FFFFFF"/>
+                  <Run Text="{Binding Place}" Foreground="#99FFFFFF"/>
+                </TextBlock>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <ScrollViewer Grid.Column="4" IsVisible="{Binding DetailVisible}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding DetailNumber}" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding DetailName}" FontSize="16" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding DetailStatus}" FontWeight="SemiBold" Foreground="{Binding DetailStatusBrush}"/>
+          <TextBlock Text="{Binding DetailPlace}" TextWrapping="Wrap" Opacity="0.75"/>
+          <TextBlock Text="{Binding DetailMove, StringFormat='Návrh: {0}'}" IsVisible="{Binding DetailMove, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+          <TextBlock Text="{Binding DetailDate, StringFormat='Zařazeno {0}'}"/>
+          <TextBlock Text="{Binding DetailType}"/>
+          <TextBlock Text="{Binding DetailPrice, StringFormat='Pořizovací cena {0}'}"/>
+          <TextBlock Text="{Binding DetailRest, StringFormat='Zůstatková hodnota {0}'}"/>
+          <TextBlock Text="{Binding DetailOrg}" TextWrapping="Wrap" Opacity="0.75"/>
+          <TextBlock Text="{Binding DetailScanned, StringFormat='Oskenováno: {0}'}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Name="FoundButton" Content="Nalezeno" Background="#34C759" Foreground="White" BorderBrush="#2DAD4B"/>
+            <Button Name="MoveButton" Content="Přemístit" Background="#FF9500" Foreground="White" BorderBrush="#E08600"/>
+            <Button Name="MissingButton" Content="Nenalezeno"/>
+          </StackPanel>
+          <ComboBox Name="MovePlace" ItemsSource="{Binding Places}" PlaceholderText="Kam přemístit" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="core:Location">
+                <TextBlock Text="{Binding Label}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <TextBlock IsVisible="{Binding !HasBundle}" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.7"
+               Text="Otevřete Inventura.zip z KEO4. Čtečka zůstává v americkém rozložení, Windows může být česky."/>
+    </Panel>
+  </DockPanel>
+</Window>

@@ -12,7 +12,7 @@ Nezávislá aplikace pro iPhone a iPad. Načte soubor `Inventura.zip` z programu
 
 ## Sestavení
 
-Xcode 15 nebo novější, cíl iOS 17. Otevřete `Keo.xcodeproj` a spusťte schéma Keo.
+Xcode 15 nebo novější, cíl iOS 17. Otevřete `Keo.xcodeproj` a spusťte schéma Keo. Stejný projekt má i schéma KeoMac.
 
 Jádro je balíček `KeoCore`. Testy:
 
@@ -20,6 +20,19 @@ Jádro je balíček `KeoCore`. Testy:
 cd KeoCore
 swift test
 ```
+
+### Windows
+
+Složka `Windows` je Avalonia aplikace (.NET 8). Hotový balík je v GitHub Releases jako `Keo4Inventura-win-x64.zip`. Rozbalte celou složku a spusťte `Keo4Inventura.exe`.
+
+Kontrola aktualizací funguje stejně jako u Scanneru na Windows: aplikace zjistí novější release a otevře stránku ke stažení. Repo musí být pro kontrolu verze veřejné (nebo musíte být přihlášeni ke stažení ze soukromého Releases).
+
+```sh
+export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="$HOME/.dotnet"
+dotnet test Windows/Keo.Core.Tests/Keo.Core.Tests.csproj
+dotnet publish Windows/Keo.App/Keo.App.csproj -c Release -r win-x64 --self-contained true -o Windows/dist
+```
+
 
 ## Výměna s KEO4
 

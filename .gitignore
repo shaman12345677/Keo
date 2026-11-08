@@ -6,3 +6,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 Package.resolved
+bin/
+obj/
+Windows/dist/
+Windows/*.zip
