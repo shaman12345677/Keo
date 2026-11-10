@@ -28,7 +28,7 @@
     </StackPanel>
 
     <Panel>
-    <Grid ColumnDefinitions="280,16,*,16,340" IsVisible="{Binding HasBundle}">
+    <Grid Name="MainContent" ColumnDefinitions="280,16,*,16,340" IsVisible="{Binding HasBundle}">
       <DockPanel>
         <TextBox Name="RoomSearch" DockPanel.Dock="Top" Watermark="Hledat místnost" Margin="0,0,0,8"/>
         <Button Name="AllRooms" DockPanel.Dock="Top" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,8" Content="Vše"/>
@@ -96,19 +96,22 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:PhotoRow">
-                <Border Margin="0,0,8,8" CornerRadius="6" ClipToBounds="True" Width="96" Height="96" Background="#22000000">
+                <Border Margin="0,0,8,8" CornerRadius="6" ClipToBounds="True" Width="96" Height="96"
+                        Background="#22000000" Cursor="Hand" ToolTip.Tip="Zvětšit"
+                        PointerPressed="OnPhotoPreviewPressed" Tag="{Binding FileName}">
                   <Border.ContextMenu>
                     <ContextMenu>
                       <MenuItem Header="Smazat" Click="OnDeletePhotoClick" Tag="{Binding FileName}"/>
                     </ContextMenu>
                   </Border.ContextMenu>
-                  <Image Source="{Binding Preview}" Stretch="UniformToFill" Width="96" Height="96"/>
+                  <Image Source="{Binding Preview}" Stretch="UniformToFill" Width="96" Height="96"
+                         IsHitTestVisible="False"/>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <Button Name="AddPhotoButton" Content="Z alba" HorizontalAlignment="Left"/>
-          <TextBlock Text="Windows umí přidat fotku z disku / alba. Focení z iPhonu je na Macu."
+          <TextBlock Text="Kliknutím miniaturu zvětšíte. Windows umí fotku z disku / alba."
                      FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
             <Button Name="FoundButton" Content="Nalezeno" Background="#34C759" Foreground="White" BorderBrush="#2DAD4B"/>
@@ -127,6 +130,16 @@
     </Grid>
     <TextBlock IsVisible="{Binding !HasBundle}" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.7"
                Text="Otevřete Inventura.zip z KEO4. Čtečka zůstává v americkém rozložení, Windows může být česky."/>
+    <Border Name="PhotoPreviewOverlay" IsVisible="False" Background="#E6000000"
+            PointerPressed="OnPhotoOverlayBackgroundPressed" ZIndex="100">
+      <DockPanel Margin="24">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,0,0,12">
+          <Button Name="PhotoPreviewDelete" Content="Smazat" Click="OnPhotoPreviewDeleteClick"/>
+          <Button Name="PhotoPreviewClose" Content="Zavřít" Click="OnPhotoPreviewCloseClick"/>
+        </StackPanel>
+        <Image Name="PhotoPreviewImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </DockPanel>
+    </Border>
     </Panel>
   </DockPanel>
 </Window>

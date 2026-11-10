@@ -2,6 +2,7 @@ using System.Media;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -14,6 +15,8 @@ public partial class MainWindow : Window
     private readonly ScanBurstAssembler burst = new() { Idle = 1.2 };
     private readonly DispatcherTimer clock;
     private bool scanning;
+    private string? previewFileName;
+    private Bitmap? previewBitmap;
 
     public MainWindow(InventorySession session)
     {
@@ -79,12 +82,65 @@ public partial class MainWindow : Window
             if (MovePlace.SelectedItem is Location place) session.MarkMoved(place.Id);
         };
         AddPhotoButton.Click += async (_, _) => await AddPhotoFromAlbum();
+        Closed += (_, _) => ClosePhotoPreview();
     }
 
     private void OnDeletePhotoClick(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: string fileName })
+        {
+            if (previewFileName == fileName) ClosePhotoPreview();
             session.RemovePhoto(fileName);
+        }
+    }
+
+    private void OnPhotoPreviewPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (sender is not Control { Tag: string fileName }) return;
+        ShowPhotoPreview(fileName);
+        e.Handled = true;
+    }
+
+    private void OnPhotoOverlayBackgroundPressed(object? sender, PointerPressedEventArgs e)
+    {
+        // Klik mimo tlačítka zavře náhled.
+        for (var c = e.Source as Control; c != null; c = c.Parent as Control)
+            if (c is Button) return;
+        ClosePhotoPreview();
+        e.Handled = true;
+    }
+
+    private void OnPhotoPreviewCloseClick(object? sender, RoutedEventArgs e) => ClosePhotoPreview();
+
+    private void OnPhotoPreviewDeleteClick(object? sender, RoutedEventArgs e)
+    {
+        if (previewFileName is not { } fileName) return;
+        ClosePhotoPreview();
+        session.RemovePhoto(fileName);
+    }
+
+    private void ShowPhotoPreview(string fileName)
+    {
+        var path = session.FullPhotoPath(fileName);
+        if (path == null) return;
+        Bitmap bitmap;
+        try { bitmap = new Bitmap(path); }
+        catch (Exception) { return; }
+        previewBitmap?.Dispose();
+        previewBitmap = bitmap;
+        previewFileName = fileName;
+        PhotoPreviewImage.Source = bitmap;
+        PhotoPreviewOverlay.IsVisible = true;
+    }
+
+    private void ClosePhotoPreview()
+    {
+        PhotoPreviewOverlay.IsVisible = false;
+        PhotoPreviewImage.Source = null;
+        previewBitmap?.Dispose();
+        previewBitmap = null;
+        previewFileName = null;
     }
 
     private async Task AddPhotoFromAlbum()

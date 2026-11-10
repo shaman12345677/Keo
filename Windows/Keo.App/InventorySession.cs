@@ -382,6 +382,12 @@ public sealed class InventorySession : INotifyPropertyChanged
             OnChanged(name);
     }
 
+    public string? FullPhotoPath(string fileName)
+    {
+        var path = Path.Combine(PhotosDirectory, fileName);
+        return File.Exists(path) ? path : null;
+    }
+
     private void RefreshDetailPhotos()
     {
         foreach (var row in DetailPhotos)
