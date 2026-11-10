@@ -637,6 +637,7 @@ private struct CardPane: View {
                             .buttonStyle(.bordered)
                     }
                 }
+                MacCardPhotos(cardID: item.id)
                 Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
                     fact("Umístění", item.card.umisteni?.label ?? "Bez umístění")
                     if let navrh = item.navrh {

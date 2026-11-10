@@ -21,6 +21,10 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Keo používá kameru iPhonu (Continuity Camera) k focení majetku při inventuře.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Keo načte fotografii majetku z alba při inventuře.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Samek Tomáš</string>
 </dict>
