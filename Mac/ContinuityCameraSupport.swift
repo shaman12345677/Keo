@@ -1,12 +1,17 @@
 import AppKit
+import CoreGraphics
 
-/// Continuity Camera „Vyfotit na iPhonu“.
-/// Běží in-process (NSTextView + dočasné File menu) — samostatný ContinuityHelper
-/// v TestFlight/App Store padal (SIGTRAP / prázdný sandbox).
+/// Continuity Camera přes ContinuityHelper.app (vlastní bundle id + vlastní sandbox).
+/// Spouštění přes NSWorkspace (ne Process/inherit) — vhodné pro TestFlight / Mac App Store.
+/// JPEG + status: pevná pasteboard + App Group soubory / UserDefaults suite.
 enum ContinuityCameraSupport {
-    static let photoTitles = [
-        "Take Photo", "Vyfotit", "Pořídit fotografii", "Pořídit fotku", "사진 찍기"
-    ]
+    static let helperBundleID = "cz.samekt.keo.continuityhelper"
+    static let appGroupID = "group.cz.samekt.keo"
+    static let pasteboardName = NSPasteboard.Name("cz.samekt.keo.continuity.transfer")
+    static let statusType = NSPasteboard.PasteboardType("cz.samekt.keo.continuity.status")
+    static let jpegType = NSPasteboard.PasteboardType("cz.samekt.keo.continuity.jpeg")
+    static let jpegFileName = "keo-continuity-last.jpg"
+    static let statusFileName = "keo-continuity-status.txt"
 
     static func registerServices() {
         let returnTypes = NSImage.imageTypes.map { NSPasteboard.PasteboardType($0) }
@@ -17,7 +22,7 @@ enum ContinuityCameraSupport {
     @discardableResult
     static func installMenuItemIfNeeded() -> NSMenuItem? {
         guard let mainMenu = NSApp.mainMenu else { return nil }
-        if let existing = findImportItem(in: mainMenu) { return existing }
+        if findImportItem(in: mainMenu) != nil { return findImportItem(in: mainMenu) }
 
         let item = NSMenuItem(title: "Importovat z iPhonu nebo iPadu", action: nil, keyEquivalent: "")
         item.identifier = NSMenuItem.importFromDeviceIdentifier
@@ -44,37 +49,73 @@ enum ContinuityCameraSupport {
         return nil
     }
 
-    static func isTakePhotoTitle(_ title: String) -> Bool {
-        let t = title.lowercased()
-        if t.contains("scan") || t.contains("sken") || t.contains("nasken")
-            || t.contains("sketch") || t.contains("náčrt") || t.contains("kresb") {
-            return false
+    static func helperAppURL() -> URL? {
+        let nested = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Helpers/ContinuityHelper.app")
+        if FileManager.default.fileExists(atPath: nested.path) { return nested }
+        return nil
+    }
+
+    static var pasteboard: NSPasteboard { NSPasteboard(name: pasteboardName) }
+
+    static func groupURL(_ name: String) -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
+            .appendingPathComponent(name)
+    }
+
+    static func clearTransfer() {
+        pasteboard.clearContents()
+        try? groupURL(jpegFileName).map { try FileManager.default.removeItem(at: $0) }
+        try? groupURL(statusFileName).map { try FileManager.default.removeItem(at: $0) }
+        UserDefaults(suiteName: appGroupID)?.removeObject(forKey: "lastJPEG")
+        UserDefaults(suiteName: appGroupID)?.removeObject(forKey: "lastStatus")
+        UserDefaults(suiteName: appGroupID)?.synchronize()
+    }
+
+    static func readJPEG() -> Data? {
+        if let data = pasteboard.data(forType: jpegType), !data.isEmpty { return data }
+        if let data = pasteboard.data(forType: .init("public.jpeg")), !data.isEmpty { return data }
+        if let url = groupURL(jpegFileName), let data = try? Data(contentsOf: url), !data.isEmpty {
+            return data
         }
-        return photoTitles.contains(title)
-            || t.contains("take photo")
-            || t.contains("vyfotit")
-            || t.contains("pořídit fot")
-            || t.contains("fotograf")
-            || t.contains("fotku")
+        if let data = UserDefaults(suiteName: appGroupID)?.data(forKey: "lastJPEG"), !data.isEmpty {
+            return data
+        }
+        return nil
+    }
+
+    static func readStatus() -> String? {
+        if let s = pasteboard.string(forType: statusType)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty {
+            return s
+        }
+        if let url = groupURL(statusFileName),
+           let s = try? String(contentsOf: url, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty {
+            return s
+        }
+        if let s = UserDefaults(suiteName: appGroupID)?.string(forKey: "lastStatus")?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty {
+            return s
+        }
+        return nil
     }
 }
 
-// MARK: - In-process capture (ContinuityCapture styl)
-
-final class ContinuityTakePhotoSession: NSObject, NSTextViewDelegate {
+final class ContinuityTakePhotoSession {
     private let onImage: (Data) -> Void
     private let onStatus: (String) -> Void
     private let onFailed: (String) -> Void
 
-    private var window: KeyableWindow?
-    private var textView: CaptureTextView?
-    private var previousMainMenu: NSMenu?
-    private var captureMainMenu: NSMenu?
-    private var menuGuard: Timer?
-    private var observers: [NSObjectProtocol] = []
-    private var received = false
-    private var invoked = false
+    private var helperPID: pid_t?
+    private var pollTimer: Timer?
     private var finished = false
+    private var startedAt = Date()
+    private var sawHelperContinuityPanel = false
+    private var missingHelperPanelTicks = 0
+    private var sawHelperRunning = false
+    private var missingHelperAppTicks = 0
+    private var resultObserver: NSObjectProtocol?
 
     init(
         onStatus: @escaping (String) -> Void,
@@ -84,252 +125,261 @@ final class ContinuityTakePhotoSession: NSObject, NSTextViewDelegate {
         self.onStatus = onStatus
         self.onImage = onImage
         self.onFailed = onFailed
-        super.init()
     }
 
     func start() {
         ContinuityCameraSupport.registerServices()
-        installCaptureMainMenu()
+        ContinuityCameraSupport.installMenuItemIfNeeded()
 
-        let mouse = NSEvent.mouseLocation
-        let rect = NSRect(x: mouse.x - 20, y: mouse.y - 20, width: 40, height: 40)
-        let window = KeyableWindow(contentRect: rect, styleMask: [.borderless], backing: .buffered, defer: false)
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.alphaValue = 0.02
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.isReleasedWhenClosed = false
+        guard let helperApp = ContinuityCameraSupport.helperAppURL() else {
+            onFailed("ContinuityHelper chybí v aplikaci. Znovu sestav Mac target.")
+            return
+        }
 
-        let textView = CaptureTextView(frame: NSRect(x: 0, y: 0, width: 40, height: 40))
-        textView.isRichText = true
-        textView.isEditable = true
-        textView.importsGraphics = true
-        textView.allowsImageEditing = false
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.delegate = self
-        window.contentView = textView
+        ContinuityCameraSupport.clearTransfer()
+        startedAt = Date()
+        installResultObserver()
 
-        self.window = window
-        self.textView = textView
+        for app in NSRunningApplication.runningApplications(
+            withBundleIdentifier: ContinuityCameraSupport.helperBundleID
+        ) {
+            app.terminate()
+        }
 
-        observers.append(NotificationCenter.default.addObserver(
-            forName: NSTextStorage.didProcessEditingNotification,
-            object: textView.textStorage,
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        config.allowsRunningApplicationSubstitution = false
+        config.createsNewApplicationInstance = true
+
+        onStatus("Otevírám foťák na iPhonu…")
+        NSWorkspace.shared.openApplication(at: helperApp, configuration: config) { [weak self] app, error in
+            DispatchQueue.main.async {
+                guard let self, !self.finished else { return }
+                if let error {
+                    self.fail("Nepodařilo se spustit ContinuityHelper: \(error.localizedDescription)")
+                    return
+                }
+                self.helperPID = app?.processIdentifier
+                self.sawHelperRunning = app != nil
+                self.startPolling()
+            }
+        }
+    }
+
+    private func installResultObserver() {
+        if let resultObserver {
+            DistributedNotificationCenter.default().removeObserver(resultObserver)
+        }
+        resultObserver = DistributedNotificationCenter.default().addObserver(
+            forName: Notification.Name("cz.samekt.keo.continuity.result"),
+            object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.extractAttachments()
-        })
-
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.makeFirstResponder(textView)
-
-        // SwiftUI občas vrátí své menu — drž Continuity File menu po dobu focení.
-        menuGuard = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
-            self?.ensureCaptureMenu()
+        ) { [weak self] note in
+            guard let self, !self.finished else { return }
+            let result = (note.object as? String) ?? ""
+            self.handleIPCResult(result)
         }
-        if let menuGuard {
-            RunLoop.main.add(menuGuard, forMode: .common)
-        }
+    }
 
-        onStatus("Hledám iPhone…")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.trigger(attempt: 1)
+    private func handleIPCResult(_ result: String) {
+        if let jpeg = ContinuityCameraSupport.readJPEG(), !jpeg.isEmpty {
+            finished = true
+            terminateHelper()
+            onStatus("Fotografie přijata.")
+            onImage(jpeg)
+            tearDown()
+            return
         }
+        let status = result.isEmpty ? (ContinuityCameraSupport.readStatus() ?? "") : result
+        if status == "ok" {
+            // JPEG ještě nemusí být vidět — poll to dožene.
+            return
+        }
+        if !status.isEmpty {
+            fail(mapStatus(status))
+        }
+    }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 90) { [weak self] in
-            guard let self, !self.received, !self.finished else { return }
-            self.fail("Vypršel čas. Odemkni iPhone a nech ho poblíž Macu (Wi‑Fi + Bluetooth, stejné Apple ID).")
+    private func banishLocalContinuityChrome() {
+        for w in NSApp.windows {
+            if w.styleMask.contains(.titled), w.frame.width > 500 { continue }
+            let f = w.frame
+            let looks = w.title.lowercased().contains("fot")
+                || w.title.lowercased().contains("iphone")
+                || w.title.lowercased().contains("photo")
+            let sizeOK = f.width >= 150 && f.width <= 420 && f.height >= 120 && f.height <= 280
+            guard looks || sizeOK else { continue }
+            w.alphaValue = 0
+            w.ignoresMouseEvents = true
+            w.hasShadow = false
+            w.contentView?.isHidden = true
+            if f.origin.x > -5000 {
+                w.setFrame(NSRect(x: -20000, y: -20000, width: f.width, height: f.height), display: false)
+            }
         }
     }
 
     func cancel() {
-        finished = true
-        tearDown()
-    }
-
-    private func installCaptureMainMenu() {
-        previousMainMenu = NSApp.mainMenu
-        let mainMenu = NSMenu()
-        let appItem = NSMenuItem()
-        let appMenu = NSMenu(title: "Keo4 inventura")
-        let cancelItem = NSMenuItem(title: "Zrušit focení", action: #selector(cancelFromMenu), keyEquivalent: ".")
-        cancelItem.target = self
-        appMenu.addItem(cancelItem)
-        appItem.submenu = appMenu
-        mainMenu.addItem(appItem)
-
-        let fileItem = NSMenuItem()
-        let fileMenu = NSMenu(title: "File")
-        let magic = NSMenuItem(title: "Import from Device", action: nil, keyEquivalent: "")
-        magic.identifier = NSMenuItem.importFromDeviceIdentifier
-        fileMenu.addItem(magic)
-        fileItem.submenu = fileMenu
-        mainMenu.addItem(fileItem)
-
-        captureMainMenu = mainMenu
-        NSApp.mainMenu = mainMenu
-    }
-
-    private func ensureCaptureMenu() {
-        guard !finished, let captureMainMenu else { return }
-        if NSApp.mainMenu !== captureMainMenu {
-            NSApp.mainMenu = captureMainMenu
-        }
-    }
-
-    @objc private func cancelFromMenu() {
         fail("Zrušeno.")
     }
 
-    private func trigger(attempt: Int) {
-        guard !finished, !received else { return }
-        ensureCaptureMenu()
-        window?.makeKeyAndOrderFront(nil)
-        if let textView { window?.makeFirstResponder(textView) }
-
-        let fileMenu = NSApp.mainMenu?.item(at: 1)?.submenu
-        fileMenu?.update()
-        guard let magic = fileMenu?.items.first(where: { $0.submenu != nil }),
-              let sub = magic.submenu else {
-            if attempt < 25 {
-                onStatus("Čekám na Continuity menu… (\(attempt))")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.trigger(attempt: attempt + 1)
-                }
-            } else {
-                fail("iPhone nenalezen. Odemkni iPhone poblíž Macu (stejné Apple ID, Wi‑Fi, Bluetooth).")
-            }
-            return
-        }
-
-        sub.update()
-        if fireTakePhoto(in: sub) { return }
-
-        let titles = sub.items.filter { !$0.isSeparatorItem }.map(\.title).joined(separator: ", ")
-        if attempt < 25 {
-            onStatus(titles.isEmpty ? "Čekám na iPhone… (\(attempt))" : "Nabídka: \(titles)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.trigger(attempt: attempt + 1)
-            }
-        } else if titles.isEmpty {
-            fail("iPhone nenalezen. Musí být poblíž a odemčený.")
-        } else {
-            fail("Continuity nabídka je tu (\(titles)), ale bez „Pořídit fotku“.")
+    private func startPolling() {
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            self?.pollForPhoto()
         }
     }
 
-    @discardableResult
-    private func fireTakePhoto(in menu: NSMenu) -> Bool {
-        if let idx = menu.items.firstIndex(where: {
-            !$0.isSeparatorItem && $0.isEnabled && ContinuityCameraSupport.isTakePhotoTitle($0.title)
-        }) {
-            invoked = true
-            onStatus("Otevírám foťák na iPhonu… vyfoťte a potvrďte.")
-            menu.performActionForItem(at: idx)
-            return true
+    private func helperStillRunning() -> Bool {
+        if let pid = helperPID {
+            return NSRunningApplication(processIdentifier: pid) != nil
         }
-        for item in menu.items {
-            guard let nested = item.submenu else { continue }
-            nested.update()
-            if fireTakePhoto(in: nested) { return true }
+        return !NSRunningApplication.runningApplications(
+            withBundleIdentifier: ContinuityCameraSupport.helperBundleID
+        ).isEmpty
+    }
+
+    private func resolvedHelperPID() -> pid_t? {
+        if let pid = helperPID, NSRunningApplication(processIdentifier: pid) != nil {
+            return pid
         }
-        // Fallback: i disabled „Pořídit fotku“
-        if let idx = menu.items.firstIndex(where: {
-            !$0.isSeparatorItem && ContinuityCameraSupport.isTakePhotoTitle($0.title)
-        }) {
-            invoked = true
-            onStatus("Otevírám foťák na iPhonu… vyfoťte a potvrďte.")
-            menu.performActionForItem(at: idx)
-            return true
+        return NSRunningApplication.runningApplications(
+            withBundleIdentifier: ContinuityCameraSupport.helperBundleID
+        ).first?.processIdentifier
+    }
+
+    private func pollForPhoto() {
+        guard !finished else { return }
+        if Date().timeIntervalSince(startedAt) > 100 {
+            fail("Vypršel čas. Odemkni iPhone a nech ho poblíž Macu (Wi‑Fi + Bluetooth, stejné Apple ID).")
+            return
+        }
+
+        banishLocalContinuityChrome()
+
+        if let jpeg = ContinuityCameraSupport.readJPEG(), !jpeg.isEmpty {
+            finished = true
+            terminateHelper()
+            onStatus("Fotografie přijata.")
+            onImage(jpeg)
+            tearDown()
+            return
+        }
+
+        if let status = ContinuityCameraSupport.readStatus(), status != "ok" {
+            fail(mapStatus(status))
+            return
+        }
+
+        if let pid = resolvedHelperPID() {
+            helperPID = pid
+            if Self.helperContinuityPanelExists(pid: pid) {
+                sawHelperContinuityPanel = true
+                missingHelperPanelTicks = 0
+            } else if sawHelperContinuityPanel {
+                // Panel pryč: krátká grace na JPEG, jinak cancel (helper taky posílá status).
+                missingHelperPanelTicks += 1
+                if missingHelperPanelTicks >= 4 { // ~1 s
+                    if let jpeg = ContinuityCameraSupport.readJPEG(), !jpeg.isEmpty {
+                        finished = true
+                        terminateHelper()
+                        onStatus("Fotografie přijata.")
+                        onImage(jpeg)
+                        tearDown()
+                        return
+                    }
+                    if let status = ContinuityCameraSupport.readStatus(), status != "ok" {
+                        fail(mapStatus(status))
+                        return
+                    }
+                    fail("Zrušeno.")
+                    return
+                }
+            }
+        }
+
+        if helperStillRunning() {
+            sawHelperRunning = true
+            missingHelperAppTicks = 0
+        } else if sawHelperRunning {
+            missingHelperAppTicks += 1
+            if missingHelperAppTicks >= 3 {
+                handleHelperExit()
+                return
+            }
+        }
+
+        onStatus("Čekám na fotku z iPhonu…")
+    }
+
+    private func mapStatus(_ status: String) -> String {
+        if status.contains("cancelled") { return "Zrušeno." }
+        if status.contains("submenu never attached") || status.contains("no Take Photo") {
+            return "iPhone nenalezen. Odemkni iPhone poblíž Macu (stejné Apple ID, Wi‑Fi, Bluetooth)."
+        }
+        if status.contains("timeout") { return "Vypršel čas čekání na iPhone." }
+        if status.hasPrefix("write failed") { return "Nepodařilo se uložit fotku z Continuity." }
+        return status
+    }
+
+    private func handleHelperExit() {
+        guard !finished else { return }
+        if let jpeg = ContinuityCameraSupport.readJPEG(), !jpeg.isEmpty {
+            finished = true
+            onStatus("Fotografie přijata.")
+            onImage(jpeg)
+            tearDown()
+            return
+        }
+        if let status = ContinuityCameraSupport.readStatus(), status != "ok" {
+            fail(mapStatus(status))
+            return
+        }
+        fail("Focení skončilo bez fotografie. Zkus znovu s odemčeným iPhonem poblíž.")
+    }
+
+    private static func helperContinuityPanelExists(pid: Int32) -> Bool {
+        guard let info = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID)
+                as? [[String: Any]] else { return false }
+        for item in info {
+            guard (item[kCGWindowOwnerPID as String] as? pid_t) == pid else { continue }
+            let bounds = item[kCGWindowBounds as String] as? [String: Any]
+            let width = (bounds?["Width"] as? NSNumber)?.doubleValue ?? 0
+            let height = (bounds?["Height"] as? NSNumber)?.doubleValue ?? 0
+            if abs(width - 300) < 2, abs(height - 120) < 2 { continue }
+            if width >= 150, width <= 280, height >= 120, height <= 240 {
+                return true
+            }
         }
         return false
     }
 
-    private func extractAttachments() {
-        guard !received, let storage = textView?.textStorage, storage.length > 0 else { return }
-        DispatchQueue.main.async { [weak self] in self?.pullAttachments() }
-    }
-
-    private func pullAttachments() {
-        guard !received, let storage = textView?.textStorage else { return }
-        storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: storage.length)) { value, _, stop in
-            guard let att = value as? NSTextAttachment else { return }
-            if let data = self.attachmentData(att) {
-                self.received = true
-                self.finished = true
-                stop.pointee = true
-                self.onStatus("Fotografie přijata.")
-                self.onImage(data)
-                self.tearDown()
-            }
+    private func terminateHelper() {
+        if let pid = helperPID, let app = NSRunningApplication(processIdentifier: pid) {
+            app.terminate()
         }
-    }
-
-    private func attachmentData(_ att: NSTextAttachment) -> Data? {
-        if let fw = att.fileWrapper, fw.isRegularFile, let data = fw.regularFileContents, !data.isEmpty {
-            return jpegIfNeeded(data)
+        for app in NSRunningApplication.runningApplications(
+            withBundleIdentifier: ContinuityCameraSupport.helperBundleID
+        ) {
+            app.terminate()
         }
-        if let contents = att.contents, !contents.isEmpty {
-            return jpegIfNeeded(contents)
-        }
-        if let cell = att.attachmentCell as? NSTextAttachmentCell, let image = cell.image {
-            return jpegFromImage(image)
-        }
-        return nil
-    }
-
-    private func jpegIfNeeded(_ data: Data) -> Data {
-        if data.starts(with: [0xFF, 0xD8, 0xFF]) { return data }
-        if let image = NSImage(data: data) { return jpegFromImage(image) ?? data }
-        return data
-    }
-
-    private func jpegFromImage(_ image: NSImage) -> Data? {
-        guard let tiff = image.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff) else { return nil }
-        return rep.representation(using: .jpeg, properties: [.compressionFactor: 0.92])
     }
 
     private func fail(_ message: String) {
         guard !finished else { return }
         finished = true
+        terminateHelper()
         onFailed(message)
         tearDown()
     }
 
     private func tearDown() {
-        menuGuard?.invalidate()
-        menuGuard = nil
-        observers.forEach(NotificationCenter.default.removeObserver)
-        observers.removeAll()
-        window?.orderOut(nil)
-        window = nil
-        textView = nil
-        if let previousMainMenu {
-            NSApp.mainMenu = previousMainMenu
-            self.previousMainMenu = nil
+        pollTimer?.invalidate()
+        pollTimer = nil
+        helperPID = nil
+        if let resultObserver {
+            DistributedNotificationCenter.default().removeObserver(resultObserver)
+            self.resultObserver = nil
         }
-        captureMainMenu = nil
-        _ = invoked
+        ContinuityCameraSupport.clearTransfer()
     }
-}
-
-final class CaptureTextView: NSTextView {
-    override func validRequestor(
-        forSendType sendType: NSPasteboard.PasteboardType?,
-        returnType: NSPasteboard.PasteboardType?
-    ) -> Any? {
-        if let returnType,
-           NSImage.imageTypes.contains(returnType.rawValue) || returnType.rawValue == "com.adobe.pdf" {
-            return self
-        }
-        return super.validRequestor(forSendType: sendType, returnType: returnType)
-    }
-}
-
-final class KeyableWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
 }

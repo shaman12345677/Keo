@@ -47,13 +47,26 @@ struct MacCardPhotos: View {
                     Label("Z alba", systemImage: "photo.on.rectangle")
                 }
                 .buttonStyle(.bordered)
-                Button {
-                    startContinuityCapture()
-                } label: {
-                    Label("Vyfotit na iPhonu", systemImage: "iphone")
-                }
-                .buttonStyle(.bordered)
                 .disabled(captureSession != nil)
+                if captureSession == nil {
+                    Button {
+                        startContinuityCapture()
+                    } label: {
+                        Label("Vyfotit na iPhonu", systemImage: "iphone")
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    Button(role: .destructive) {
+                        captureSession?.cancel()
+                        captureSession = nil
+                        captureStatus = nil
+                        captureError = "Zrušeno."
+                    } label: {
+                        Label("Zrušit focení", systemImage: "xmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    .keyboardShortcut(.cancelAction)
+                }
             }
             if let captureStatus {
                 Text(captureStatus)

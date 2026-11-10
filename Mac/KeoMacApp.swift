@@ -27,8 +27,9 @@ final class KeoMacAppDelegate: NSObject, NSApplicationDelegate {
         ContinuityCameraSupport.registerServices()
         ContinuityCameraSupport.installMenuItemIfNeeded()
         // SwiftUI menu se skládá později — Continuity položku musíme doplnit opakovaně.
-        for delay in [0.3, 0.8, 1.5, 3.0] as [TimeInterval] {
+        for delay in [0.3, 0.8, 1.5, 3.0, 6.0] as [TimeInterval] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                ContinuityCameraSupport.registerServices()
                 ContinuityCameraSupport.installMenuItemIfNeeded()
             }
         }

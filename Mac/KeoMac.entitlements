@@ -10,5 +10,9 @@
 	<true/>
 	<key>com.apple.security.personal-information.photos-library</key>
 	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.cz.samekt.keo</string>
+	</array>
 </dict>
 </plist>
