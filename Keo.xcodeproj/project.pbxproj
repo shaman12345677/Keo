@@ -122,7 +122,6 @@
 				C30000000000000000000025 /* Sources */,
 				C30000000000000000000026 /* Frameworks */,
 				C30000000000000000000027 /* Resources */,
-				C30000000000000000000040 /* Embed ContinuityHelper */,
 			);
 			buildRules = (
 			);
@@ -199,31 +198,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		C30000000000000000000040 /* Embed ContinuityHelper */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/ContinuityHelper/main.swift",
-				"$(SRCROOT)/Mac/ContinuityHelper.entitlements",
-				"$(SRCROOT)/Mac/scripts/embed-continuity-helper.sh",
-			);
-			name = "Embed ContinuityHelper";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/ContinuityHelper",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/bash;
-			shellScript = "\"${SRCROOT}/Mac/scripts/embed-continuity-helper.sh\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000007 /* Sources */ = {
