@@ -51,7 +51,7 @@ public struct InventoryBundle: Equatable, Sendable {
         )
     }
 
-    public func exportZip(changes: [String: CardChange]) throws -> Data {
+    public func exportZip(changes: [String: CardChange], photos: [CardPhoto] = []) throws -> Data {
         let locationsByID = Dictionary(locations.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
         var patched = entries
         guard let index = patched.firstIndex(where: { ($0.name as NSString).lastPathComponent == "InventarizovaneKarty.xml" }) else {
@@ -62,6 +62,19 @@ public struct InventoryBundle: Equatable, Sendable {
         }
         xml = try CardPatcher.apply(xml: xml, changes: changes, locations: locationsByID)
         patched[index].data = Data(xml.utf8)
+        if !photos.isEmpty {
+            patched.removeAll {
+                let name = ($0.name as NSString).lastPathComponent
+                return name == "FotkyInventarizovaneKarty.xml"
+                    || $0.name == "photos/index.csv"
+                    || $0.name.hasPrefix("photos/")
+            }
+            patched.append(ZipEntry(name: "FotkyInventarizovaneKarty.xml", data: CardPhotoExport.makeFotkyXML(photos: photos)))
+            patched.append(ZipEntry(name: "photos/index.csv", data: CardPhotoExport.makeIndexCSV(photos: photos)))
+            for photo in photos {
+                patched.append(ZipEntry(name: photo.zipPath, data: photo.jpegData))
+            }
+        }
         return try ZipArchive.write(entries: patched)
     }
 

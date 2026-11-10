@@ -109,8 +109,22 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(index.match("110-A").map(\.id), [])
 
         let moved = CardChange.premisteni(locationID: "L2")
-        let exported = try bundle.exportZip(changes: ["1": .nalezeno(), "2": moved])
+        let tinyJPEG = Data(base64Encoded: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=")!
+        let photo = CardPhoto(
+            cardID: "1",
+            localID: 1,
+            fileName: "karta_1_20260101_120000.jpg",
+            jpegData: tinyJPEG,
+            thumbJpegData: tinyJPEG
+        )
+        let exported = try bundle.exportZip(changes: ["1": .nalezeno(), "2": moved], photos: [photo])
         let again = try InventoryBundle.load(data: exported, filename: "export.zip")
+        let exportedEntries = try ZipArchive.read(data: exported)
+        XCTAssertNotNil(exportedEntries.first { $0.name == "photos/karta_1_20260101_120000.jpg" })
+        XCTAssertNotNil(exportedEntries.first { $0.name == "photos/index.csv" })
+        let fotky = String(data: exportedEntries.first { $0.name == "FotkyInventarizovaneKarty.xml" }!.data, encoding: .utf8)!
+        XCTAssertTrue(fotky.contains("<id>1</id>"))
+        XCTAssertTrue(fotky.contains("photos/karta_1_20260101_120000.jpg"))
         XCTAssertEqual(again.cards[0].stavInventarizace, "NALEZENO")
         XCTAssertTrue(again.cards[0].oskenovano)
         XCTAssertNil(again.cards[0].navrh)
