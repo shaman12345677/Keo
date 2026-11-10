@@ -20,7 +20,9 @@
 		C30000000000000000000022 /* Exceptions for "Mac" folder in "KeoMac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ContinuityHelper.entitlements,
 				Info.plist,
+				"scripts/embed-continuity-helper.sh",
 			);
 			target = C30000000000000000000024 /* KeoMac */;
 		};
@@ -180,31 +182,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		C30000000000000000000040 /* Embed ContinuityHelper */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/ContinuityHelper/main.swift",
-				"$(SRCROOT)/Mac/scripts/embed-continuity-helper.sh",
-			);
-			name = "Embed ContinuityHelper";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/ContinuityHelper",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/bash;
-			shellScript = "\"${SRCROOT}/Mac/scripts/embed-continuity-helper.sh\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -221,6 +198,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C30000000000000000000040 /* Embed ContinuityHelper */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/ContinuityHelper/main.swift",
+				"$(SRCROOT)/Mac/ContinuityHelper.entitlements",
+				"$(SRCROOT)/Mac/scripts/embed-continuity-helper.sh",
+			);
+			name = "Embed ContinuityHelper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/ContinuityHelper",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"${SRCROOT}/Mac/scripts/embed-continuity-helper.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000007 /* Sources */ = {
