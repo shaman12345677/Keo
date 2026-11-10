@@ -16,10 +16,20 @@ Nezávislá aplikace pro inventuru majetku ze souboru `Inventura.zip` z desktopo
 
 - import `Inventura.zip` vytvořeného v KEO4 pro čtečku
 - sken QR a čárových kódů (kamera na iOS, HID čtečka na Macu a Windows)
-- fotografie majetku (iOS/Mac: foťák i album; Windows: z alba / disku)
+- fotografie majetku (iOS: foťák i album; Mac: album + Continuity Camera z iPhonu; Windows: z alba / disku)
 - označení karty jako nalezené, nenalezené, nebo s návrhem přemístění
 - otevření místnosti podle štítku místnosti
 - export, který v původním XML mění jen stav inventarizace, oskenování a návrh přemístění
+
+## Mac — fotografie přes Continuity
+
+Na Macu můžete fotit majetek přímo na iPhonu (**Vyfotit na iPhonu**):
+
+- iPhone poblíž, odemčený, stejné Apple ID, zapnuté Wi‑Fi a Bluetooth
+- focení i zrušení na iPhonu ukončí čekání v Keo
+- alternativně **Z alba** (Photos / soubor)
+
+Technicky Mac spouští vnořený `ContinuityHelper.app` (vlastní sandbox + App Group `group.cz.samekt.keo`). Pro App Store / TestFlight je u App ID `cz.samekt.keo` i `cz.samekt.keo.continuityhelper` potřeba App Groups.
 
 ## Windows
 
@@ -47,6 +57,8 @@ SmartScreen může u nepodepsaného souboru zobrazit varování. Jde o očekáva
 ### iOS / Mac
 
 Xcode 15 nebo novější, cíl iOS 17 / macOS 14. Otevřete `Keo.xcodeproj`. Schéma **Keo** je iPhone/iPad, schéma **KeoMac** je Mac.
+
+KeoMac při sestavení embeduje `ContinuityHelper` skriptem `Mac/scripts/embed-continuity-helper.sh` (sandboxovaný helper, `REGISTER_APP_GROUPS = YES`).
 
 Jádro je balíček `KeoCore`:
 
