@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 
 namespace Keo;
 
@@ -29,12 +31,21 @@ public sealed class CardRow
     public IBrush StatusBrush { get; init; } = Brushes.Gray;
 }
 
+public sealed class PhotoRow
+{
+    public string FileName { get; init; } = "";
+    public Bitmap? Preview { get; init; }
+}
+
 public sealed class InventorySession : INotifyPropertyChanged
 {
     private readonly string directory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Keo", "session");
+    private string PhotosDirectory => Path.Combine(directory, "photos");
     private InventoryBundle? bundle;
     private readonly Dictionary<string, CardChange> changes = new();
+    private readonly List<SessionPhoto> photos = new();
+    private int nextPhotoID = 1;
     private string fragment = "";
     private DateTime fragmentAt = DateTime.MinValue;
     private string lastCode = "";
@@ -47,6 +58,7 @@ public sealed class InventorySession : INotifyPropertyChanged
     public ObservableCollection<RoomRow> Rooms { get; } = new();
     public ObservableCollection<CardRow> Cards { get; } = new();
     public ObservableCollection<Location> Places { get; } = new();
+    public ObservableCollection<PhotoRow> DetailPhotos { get; } = new();
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<string, bool>? ScanFeedback;
@@ -85,6 +97,11 @@ public sealed class InventorySession : INotifyPropertyChanged
         File.WriteAllBytes(Path.Combine(directory, "inventory.zip"), data);
         File.WriteAllText(Path.Combine(directory, "meta.json"), JsonSerializer.Serialize(new SessionMeta(bundle.Filename)));
         SaveChanges();
+        ResetPhotosDirectory();
+        photos.Clear();
+        photos.AddRange(ImportPhotos(bundle));
+        nextPhotoID = (photos.Count == 0 ? 0 : photos.Max(photo => photo.LocalID)) + 1;
+        SavePhotosMeta();
         showAll = true;
         placeId = null;
         selectedId = null;
@@ -95,7 +112,32 @@ public sealed class InventorySession : INotifyPropertyChanged
     {
         if (bundle == null) throw new InventoryException("Není otevřená inventura.");
         name = $"keo4-export-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
-        return bundle.ExportZip(changes);
+        return bundle.ExportZip(changes, ExportPhotos());
+    }
+
+    public bool AddPhoto(string cardID, byte[] imageData)
+    {
+        if (bundle == null || bundle.Cards.All(card => card.Id != cardID)) return false;
+        var prepared = PhotoCodec.PrepareInventoryJpeg(imageData);
+        if (prepared == null) return false;
+        Directory.CreateDirectory(PhotosDirectory);
+        var localID = nextPhotoID++;
+        var fileName = CardPhotoExport.MakeFileName(localID);
+        File.WriteAllBytes(Path.Combine(PhotosDirectory, fileName), prepared.Value.Full);
+        File.WriteAllBytes(Path.Combine(PhotosDirectory, ThumbName(fileName)), prepared.Value.Thumb);
+        photos.Add(new SessionPhoto(cardID, localID, fileName));
+        SavePhotosMeta();
+        if (selectedId == cardID) RefreshDetailPhotos();
+        return true;
+    }
+
+    public void RemovePhoto(string fileName)
+    {
+        photos.RemoveAll(photo => photo.FileName == fileName);
+        try { File.Delete(Path.Combine(PhotosDirectory, fileName)); } catch (Exception) { /* ignore */ }
+        try { File.Delete(Path.Combine(PhotosDirectory, ThumbName(fileName))); } catch (Exception) { /* ignore */ }
+        SavePhotosMeta();
+        RefreshDetailPhotos();
     }
 
     public void ShowAll()
@@ -216,6 +258,7 @@ public sealed class InventorySession : INotifyPropertyChanged
                 foreach (var (id, dto) in stored)
                     changes[id] = new CardChange { Stav = dto.Stav, Oskenovano = dto.Oskenovano, NavrhPremisteniId = dto.NavrhPremisteniId };
             }
+            LoadPhotosMeta();
             Refresh();
         }
         catch (Exception error)
@@ -332,11 +375,174 @@ public sealed class InventorySession : INotifyPropertyChanged
             DetailOrg = card.Organizace;
             DetailScanned = state.Oskenovano ? "Ano" : "Ne";
         }
+        RefreshDetailPhotos();
         OnChanged(nameof(SelectedCard));
         OnChanged(nameof(DetailVisible));
         foreach (var name in new[] { nameof(DetailNumber), nameof(DetailName), nameof(DetailStatus), nameof(DetailStatusBrush), nameof(DetailPlace), nameof(DetailMove), nameof(DetailDate), nameof(DetailType), nameof(DetailPrice), nameof(DetailRest), nameof(DetailOrg), nameof(DetailScanned) })
             OnChanged(name);
     }
+
+    private void RefreshDetailPhotos()
+    {
+        foreach (var row in DetailPhotos)
+            row.Preview?.Dispose();
+        DetailPhotos.Clear();
+        if (selectedId == null) return;
+        foreach (var photo in photos.Where(item => item.CardID == selectedId).OrderBy(item => item.LocalID))
+        {
+            var thumbPath = Path.Combine(PhotosDirectory, ThumbName(photo.FileName));
+            var fullPath = Path.Combine(PhotosDirectory, photo.FileName);
+            var path = File.Exists(thumbPath) ? thumbPath : fullPath;
+            Bitmap? preview = null;
+            if (File.Exists(path))
+            {
+                try { preview = new Bitmap(path); } catch (Exception) { preview = null; }
+            }
+            DetailPhotos.Add(new PhotoRow { FileName = photo.FileName, Preview = preview });
+        }
+    }
+
+    private List<CardPhoto> ExportPhotos()
+    {
+        var result = new List<CardPhoto>();
+        foreach (var photo in photos)
+        {
+            var jpegPath = Path.Combine(PhotosDirectory, photo.FileName);
+            if (!File.Exists(jpegPath)) continue;
+            var jpeg = File.ReadAllBytes(jpegPath);
+            var thumbPath = Path.Combine(PhotosDirectory, ThumbName(photo.FileName));
+            byte[] thumb;
+            if (File.Exists(thumbPath)) thumb = File.ReadAllBytes(thumbPath);
+            else
+            {
+                var prepared = PhotoCodec.PrepareInventoryJpeg(jpeg);
+                thumb = prepared?.Thumb ?? jpeg;
+            }
+            result.Add(new CardPhoto
+            {
+                CardID = photo.CardID,
+                LocalID = photo.LocalID,
+                FileName = photo.FileName,
+                JpegData = jpeg,
+                ThumbJpegData = thumb
+            });
+        }
+        return result;
+    }
+
+    private void ResetPhotosDirectory()
+    {
+        if (Directory.Exists(PhotosDirectory))
+            Directory.Delete(PhotosDirectory, recursive: true);
+        Directory.CreateDirectory(PhotosDirectory);
+        photos.Clear();
+        nextPhotoID = 1;
+    }
+
+    private void SavePhotosMeta()
+    {
+        Directory.CreateDirectory(directory);
+        var meta = new PhotosMeta(nextPhotoID, photos.Select(photo => new SessionPhotoDto(photo.CardID, photo.LocalID, photo.FileName)).ToList());
+        File.WriteAllText(Path.Combine(directory, "photos.json"), JsonSerializer.Serialize(meta));
+    }
+
+    private void LoadPhotosMeta()
+    {
+        photos.Clear();
+        nextPhotoID = 1;
+        var path = Path.Combine(directory, "photos.json");
+        if (!File.Exists(path)) return;
+        try
+        {
+            var meta = JsonSerializer.Deserialize<PhotosMeta>(File.ReadAllText(path));
+            if (meta == null) return;
+            nextPhotoID = Math.Max(1, meta.NextID);
+            foreach (var item in meta.Photos)
+            {
+                if (!File.Exists(Path.Combine(PhotosDirectory, item.FileName))) continue;
+                photos.Add(new SessionPhoto(item.CardID, item.LocalID, item.FileName));
+            }
+            if (photos.Count > 0)
+                nextPhotoID = Math.Max(nextPhotoID, photos.Max(photo => photo.LocalID) + 1);
+        }
+        catch (Exception)
+        {
+            photos.Clear();
+            nextPhotoID = 1;
+        }
+    }
+
+    private List<SessionPhoto> ImportPhotos(InventoryBundle loaded)
+    {
+        var imported = new List<SessionPhoto>();
+        var xmlEntry = loaded.Entries.FirstOrDefault(entry => Path.GetFileName(entry.Name) == "FotkyInventarizovaneKarty.xml");
+        var xml = xmlEntry == null ? "" : Encoding.UTF8.GetString(xmlEntry.Data);
+        var links = ParsePhotoLinks(xml);
+        Directory.CreateDirectory(PhotosDirectory);
+        foreach (var entry in loaded.Entries.Where(item => item.Name.StartsWith("photos/", StringComparison.Ordinal)
+                     && item.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)))
+        {
+            var fileName = Path.GetFileName(entry.Name);
+            if (!links.TryGetValue(entry.Name, out var cardID) && !links.TryGetValue($"photos/{fileName}", out cardID))
+                continue;
+            var prepared = PhotoCodec.PrepareInventoryJpeg(entry.Data);
+            if (prepared == null) continue;
+            var localID = NextImportID(fileName, imported.Count + 1);
+            File.WriteAllBytes(Path.Combine(PhotosDirectory, fileName), prepared.Value.Full);
+            File.WriteAllBytes(Path.Combine(PhotosDirectory, ThumbName(fileName)), prepared.Value.Thumb);
+            imported.Add(new SessionPhoto(cardID, localID, fileName));
+        }
+        return imported.OrderBy(photo => photo.LocalID).ToList();
+    }
+
+    private static int NextImportID(string fileName, int fallback)
+    {
+        var parts = fileName.Split('_');
+        if (parts.Length >= 2 && int.TryParse(parts[1], out var value)) return value;
+        return fallback;
+    }
+
+    private static Dictionary<string, string> ParsePhotoLinks(string xml)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var search = 0;
+        while (true)
+        {
+            var open = xml.IndexOf("<MblFotkaInventarizovaneKarty>", search, StringComparison.Ordinal);
+            if (open < 0) break;
+            var close = xml.IndexOf("</MblFotkaInventarizovaneKarty>", open, StringComparison.Ordinal);
+            if (close < 0) break;
+            var slice = xml[open..close];
+            var cardBlock = FirstBlock("inventarizovanaKarta", slice) ?? "";
+            var cardID = FirstTag("id", cardBlock) ?? "";
+            var zipPath = FirstTag("zipPath", slice) ?? "";
+            if (cardID.Length > 0 && zipPath.Length > 0)
+                result[zipPath] = cardID;
+            search = close + 1;
+        }
+        return result;
+    }
+
+    private static string? FirstBlock(string name, string xml)
+    {
+        var open = xml.IndexOf($"<{name}>", StringComparison.Ordinal);
+        if (open < 0) return null;
+        open += name.Length + 2;
+        var close = xml.IndexOf($"</{name}>", open, StringComparison.Ordinal);
+        return close < 0 ? null : xml[open..close];
+    }
+
+    private static string? FirstTag(string name, string xml)
+    {
+        var open = xml.IndexOf($"<{name}>", StringComparison.Ordinal);
+        if (open < 0) return null;
+        open += name.Length + 2;
+        var close = xml.IndexOf($"</{name}>", open, StringComparison.Ordinal);
+        return close < 0 ? null : xml[open..close];
+    }
+
+    private static string ThumbName(string fileName) =>
+        Path.GetFileNameWithoutExtension(fileName) + ".thumb.jpg";
 
     private AssetCard? CurrentCard() => bundle?.Cards.FirstOrDefault(card => card.Id == selectedId);
 
@@ -391,4 +597,7 @@ public sealed class InventorySession : INotifyPropertyChanged
 
     private sealed record SessionMeta(string Filename);
     private sealed record CardChangeDto(string Stav, bool Oskenovano, string? NavrhPremisteniId);
+    private sealed record SessionPhoto(string CardID, int LocalID, string FileName);
+    private sealed record SessionPhotoDto(string CardID, int LocalID, string FileName);
+    private sealed record PhotosMeta(int NextID, List<SessionPhotoDto> Photos);
 }

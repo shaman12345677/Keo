@@ -87,6 +87,29 @@
           <TextBlock Text="{Binding DetailRest, StringFormat='Zůstatková hodnota {0}'}"/>
           <TextBlock Text="{Binding DetailOrg}" TextWrapping="Wrap" Opacity="0.75"/>
           <TextBlock Text="{Binding DetailScanned, StringFormat='Oskenováno: {0}'}"/>
+          <TextBlock Text="Fotografie" FontWeight="SemiBold" Margin="0,8,0,0"/>
+          <ItemsControl ItemsSource="{Binding DetailPhotos}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:PhotoRow">
+                <Border Margin="0,0,8,8" CornerRadius="6" ClipToBounds="True" Width="96" Height="96" Background="#22000000">
+                  <Border.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Smazat" Click="OnDeletePhotoClick" Tag="{Binding FileName}"/>
+                    </ContextMenu>
+                  </Border.ContextMenu>
+                  <Image Source="{Binding Preview}" Stretch="UniformToFill" Width="96" Height="96"/>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Name="AddPhotoButton" Content="Z alba" HorizontalAlignment="Left"/>
+          <TextBlock Text="Windows umí přidat fotku z disku / alba. Focení z iPhonu je na Macu."
+                     FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
             <Button Name="FoundButton" Content="Nalezeno" Background="#34C759" Foreground="White" BorderBrush="#2DAD4B"/>
             <Button Name="MoveButton" Content="Přemístit" Background="#FF9500" Foreground="White" BorderBrush="#E08600"/>

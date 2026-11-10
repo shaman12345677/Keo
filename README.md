@@ -16,6 +16,7 @@ Nezávislá aplikace pro inventuru majetku ze souboru `Inventura.zip` z desktopo
 
 - import `Inventura.zip` vytvořeného v KEO4 pro čtečku
 - sken QR a čárových kódů (kamera na iOS, HID čtečka na Macu a Windows)
+- fotografie majetku (iOS/Mac: foťák i album; Windows: z alba / disku)
 - označení karty jako nalezené, nenalezené, nebo s návrhem přemístění
 - otevření místnosti podle štítku místnosti
 - export, který v původním XML mění jen stav inventarizace, oskenování a návrh přemístění

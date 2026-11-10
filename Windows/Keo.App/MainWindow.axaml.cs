@@ -78,6 +78,39 @@ public partial class MainWindow : Window
         {
             if (MovePlace.SelectedItem is Location place) session.MarkMoved(place.Id);
         };
+        AddPhotoButton.Click += async (_, _) => await AddPhotoFromAlbum();
+    }
+
+    private void OnDeletePhotoClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string fileName })
+            session.RemovePhoto(fileName);
+    }
+
+    private async Task AddPhotoFromAlbum()
+    {
+        if (session.SelectedCard == null) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Fotografie majetku",
+            AllowMultiple = true,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("Obrázky")
+                {
+                    Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.heic", "*.webp", "*.bmp" }
+                }
+            }
+        });
+        if (files.Count == 0) return;
+        var cardID = session.SelectedCard.Id;
+        foreach (var file in files)
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            session.AddPhoto(cardID, memory.ToArray());
+        }
     }
 
     private void OnKey(object? sender, KeyEventArgs e)

@@ -92,11 +92,19 @@ public class InventoryTests
         Assert.Empty(index.Match("V:2"));
         Assert.Empty(index.Match("110-A"));
 
+        var photo = new CardPhoto
+        {
+            CardID = "1",
+            LocalID = 1,
+            FileName = "karta_1_20260101_120000.jpg",
+            JpegData = new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 },
+            ThumbJpegData = new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 }
+        };
         var exported = bundle.ExportZip(new Dictionary<string, CardChange>
         {
             ["1"] = CardChange.Nalezeno(),
             ["2"] = CardChange.Premisteni("L2")
-        });
+        }, new[] { photo });
         var again = InventoryBundle.Load(exported, "export.zip");
         Assert.Equal("NALEZENO", again.Cards[0].StavInventarizace);
         Assert.True(again.Cards[0].Oskenovano);
@@ -110,6 +118,11 @@ public class InventoryTests
         var raw = System.Text.Encoding.UTF8.GetString(again.Entries.First(entry => entry.Name == "InventarizovaneKarty.xml").Data);
         Assert.Contains("class=\"sql-date\"", raw);
         Assert.Contains("<stavInventarizace>PREMISTENI</stavInventarizace>", raw);
+        Assert.Contains(again.Entries, entry => entry.Name == "photos/karta_1_20260101_120000.jpg");
+        Assert.Contains(again.Entries, entry => entry.Name == "photos/index.csv");
+        var fotky = System.Text.Encoding.UTF8.GetString(again.Entries.First(entry => entry.Name == "FotkyInventarizovaneKarty.xml").Data);
+        Assert.Contains("MblFotkaInventarizovaneKarty", fotky);
+        Assert.Contains("photos/karta_1_20260101_120000.jpg", fotky);
     }
 
     [Fact]

@@ -39,7 +39,7 @@ public sealed class InventoryBundle
         };
     }
 
-    public byte[] ExportZip(IReadOnlyDictionary<string, CardChange> changes)
+    public byte[] ExportZip(IReadOnlyDictionary<string, CardChange> changes, IReadOnlyList<CardPhoto>? photos = null)
     {
         var locationsById = Locations.GroupBy(place => place.Id).ToDictionary(group => group.Key, group => group.Last());
         var index = Entries.FindIndex(entry => Path.GetFileName(entry.Name) == "InventarizovaneKarty.xml");
@@ -48,6 +48,17 @@ public sealed class InventoryBundle
         xml = CardPatcher.Apply(xml, changes, locationsById);
         var patched = Entries.ToList();
         patched[index] = patched[index] with { Data = Encoding.UTF8.GetBytes(xml) };
+        if (photos is { Count: > 0 })
+        {
+            patched.RemoveAll(entry =>
+                Path.GetFileName(entry.Name) == "FotkyInventarizovaneKarty.xml"
+                || entry.Name == "photos/index.csv"
+                || entry.Name.StartsWith("photos/", StringComparison.Ordinal));
+            patched.Add(new ZipEntry("FotkyInventarizovaneKarty.xml", CardPhotoExport.MakeFotkyXml(photos)));
+            patched.Add(new ZipEntry("photos/index.csv", CardPhotoExport.MakeIndexCsv(photos)));
+            foreach (var photo in photos)
+                patched.Add(new ZipEntry(photo.ZipPath, photo.JpegData));
+        }
         return ZipArchive.Write(patched);
     }
 
